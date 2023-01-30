@@ -58,8 +58,14 @@ export default class ChartController extends React.Component<Props, State> {
 
     fillCurves() : void {
         const curvesList : any[] = Array<any>();
-        let strokeCoeff = 0;
+        
+        let letters = "0123456789ABCDEF";
+        
         this.state.data.forEach(dayItem => {
+            let color = '#';
+            for (let i = 0; i < 6; i++)
+            color += letters[(Math.floor(Math.random() * 16))];
+
             curvesList.push(
                 <Line
                     type="monotone"
@@ -67,11 +73,10 @@ export default class ChartController extends React.Component<Props, State> {
                     data={dayItem.data}
                     name={dayItem.day} 
                     key={dayItem.day}
-                    stroke={"#" + (8-strokeCoeff) + "884d8"}
+                    stroke={color}
                     activeDot={{ r: 8 }}
                 />
             );
-            strokeCoeff++;
         })
         this.setState({curvesItem: curvesList});   
     }
@@ -88,10 +93,10 @@ export default class ChartController extends React.Component<Props, State> {
             const tempStock = Array<dataSingleItem>();
                    
             daysCopy[i].temperatures.forEach(tempItem => {
-                tempStock.push({hour: "" + iter, value: tempItem.value});
+                tempStock.push({hour: moment(tempItem.hour).format('HH:mm'), value: tempItem.value});
                 iter++;
             });
-            dataList.push({day: "Jour " + i, data: tempStock});         
+            dataList.push({day: moment(daysCopy[i].date).format("DD/MM"), data: tempStock});         
         }
         this.setState({data: dataList}, () => {
             console.log("DATASET:"); console.log(this.state.data);

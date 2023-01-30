@@ -24,6 +24,7 @@ export default class Container extends React.Component {
   handleCollectDayData = (day: IDay) => {
     const days = this.state.days.slice();
     days.push(day);
+    console.log("DATE OF PUSHED DAY: ", day.date.toString());
     this.setState({
       days: days
     });

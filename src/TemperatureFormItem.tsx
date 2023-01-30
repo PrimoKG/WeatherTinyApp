@@ -4,6 +4,7 @@ import { DesktopDatePicker, LocalizationProvider, TimePicker } from '@mui/x-date
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import moment, { Moment } from 'moment';
 import * as React from 'react';
+import { ChangeEvent } from 'react';
 
 import { ITemperatureItem } from './Container';
 
@@ -16,15 +17,19 @@ interface TempFormProps {
 interface IState {
     item: ITemperatureItem,
 }
-export default class TemperatureForm extends React.Component<TempFormProps, IState> {
+export default class TemperatureFormItem extends React.Component<TempFormProps, IState> {
 
     state = {
-        item: {hour: moment().startOf('day'), value: this.props.item.value}
+        item: {hour: this.props.item.hour, value: this.props.item.value}
     };
 
-    handleChangeValue = (event : any) => {
+    handleChangeValue = (event : ChangeEvent<HTMLInputElement>) => {
+      let num : any = 0;
+      if (Number.isNaN(event.target.valueAsNumber)) num = '';
+      else num = event.target.valueAsNumber;
+      
       this.setState({
-          item : {value: (event.target.value), hour: this.state.item.hour}
+          item : {value: num, hour: this.state.item.hour}
       }, () => { this.props.handleChangeTimeAndValue(
         this.state.item.value, 
         this.state.item.hour,
@@ -48,7 +53,7 @@ export default class TemperatureForm extends React.Component<TempFormProps, ISta
 
     render() {
         return (
-          <Stack direction="row" ml={8} spacing={2}>
+          <Stack direction="row" spacing={2}>
             <LocalizationProvider dateAdapter={AdapterMoment}>       
             <TimePicker
               label="Time"
@@ -57,6 +62,7 @@ export default class TemperatureForm extends React.Component<TempFormProps, ISta
               renderInput={(params) => <TextField {...params} />}
               views={['hours']}
               ampm={false}
+              readOnly={true}
             />
             </LocalizationProvider>
 
