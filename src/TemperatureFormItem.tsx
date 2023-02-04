@@ -23,7 +23,7 @@ export default class TemperatureFormItem extends React.Component<TempFormProps, 
         item: {hour: this.props.item.hour, value: this.props.item.value}
     };
 
-    handleChangeValue = (event : ChangeEvent<HTMLInputElement>) => {
+    handleChangeTemperature = (event : ChangeEvent<HTMLInputElement>) => {
       let num : any = 0;
       if (Number.isNaN(event.target.valueAsNumber)) num = '';
       else num = event.target.valueAsNumber;
@@ -39,7 +39,7 @@ export default class TemperatureFormItem extends React.Component<TempFormProps, 
 
     handleChangeHour = (hour : number | null) => {
       this.setState({
-        item : {value: this.state.item.value, hour: moment(hour)}
+        item : {hour: moment(hour), value: this.state.item.value }
       }, () => { this.props.handleChangeTimeAndValue(
         this.state.item.value, 
         this.state.item.hour,
@@ -67,7 +67,7 @@ export default class TemperatureFormItem extends React.Component<TempFormProps, 
             </LocalizationProvider>
 
             <TextField name="temperatureInput" type="number" label="Temperature"
-              value={this.state.item.value} onChange={this.handleChangeValue} />
+              value={this.state.item.value} onChange={this.handleChangeTemperature} />
           
           </Stack>
         );

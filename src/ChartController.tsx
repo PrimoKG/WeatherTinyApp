@@ -89,12 +89,11 @@ export default class ChartController extends React.Component<Props, State> {
         
         
         for(let i = 0; i < daysCopy.length; i++) {
-            let iter = 0;
+            
             const tempStock = Array<dataSingleItem>();
                    
             daysCopy[i].temperatures.forEach(tempItem => {
                 tempStock.push({hour: moment(tempItem.hour).format('HH:mm'), value: tempItem.value});
-                iter++;
             });
             dataList.push({day: moment(daysCopy[i].date).format("DD/MM"), data: tempStock});         
         }

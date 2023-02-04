@@ -4,6 +4,7 @@ import { DesktopDatePicker, LocalizationProvider, TimePicker } from '@mui/x-date
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import moment, { Moment } from 'moment';
 import * as React from 'react';
+import { useEffect } from 'react';
 
 import { IDay, ITemperatureItem } from './Container';
 import TemperatureFormItem from './TemperatureFormItem';
@@ -20,7 +21,12 @@ export default class TemperatureForm extends React.Component<Props> {
           date: moment(), 
           temperatures: Array<ITemperatureItem>()
         },
-        formsItems: Array<any>()
+        formsItems: Array<any>(),
+        buttonDisabled: {
+          add: false,
+          remove: true,
+          submit: true
+        }
     };
 
     generateCorrectHour = (len : number) : moment.Moment[] => {
@@ -65,6 +71,8 @@ export default class TemperatureForm extends React.Component<Props> {
       });
     }
 
+    
+
     generateSingleFormItem = (len : number, item : ITemperatureItem) : React.ReactElement => {
       return (
         <TemperatureFormItem 
@@ -76,76 +84,101 @@ export default class TemperatureForm extends React.Component<Props> {
       )
     }
 
+    generatePairsFormItem = (componentsList : React.ReactElement[], average: number, 
+      hours: moment.Moment[], temperatureList: ITemperatureItem[]) : React.ReactElement[] => {
+      if (componentsList.length == 0) {
+        componentsList.push(
+          this.generateSingleFormItem(componentsList.length, {hour: moment(hours[0]), value: average})
+        );
+        componentsList.push(
+          this.generateSingleFormItem(componentsList.length, {hour: moment(hours[1]), value: average})
+        );
+      }
+      else if (componentsList.length == 2) {
+        componentsList.push(
+          this.generateSingleFormItem(componentsList.length, {hour: moment(hours[0]), value: (temperatureList[0].value+average)/2})
+        );
+        componentsList.push(
+          this.generateSingleFormItem(componentsList.length, {hour: moment(hours[1]), value: (temperatureList[1].value+average)/2})
+        );
+      }
+      return componentsList;
+    }
+
+    generatePairsTemperatureItems = (temperatureList : ITemperatureItem[], average: number, 
+      hours: moment.Moment[]) : ITemperatureItem[] => {
+      if (temperatureList.length == 0) {
+        temperatureList.push(
+          {hour: moment(hours[0]), value: average}, 
+          {hour: moment(hours[1]), value: average}
+        );
+      }
+      else if (temperatureList.length ==2) {
+        temperatureList.push(
+          {hour: moment(hours[0]), value: ((temperatureList[0].value)+average)/2}, 
+          {hour: moment(hours[1]), value: (temperatureList[1].value+average)/2}
+        );
+      }
+      return temperatureList;
+    }
+
+    computeAverageTemperature = (temperatureList : ITemperatureItem[]) : number => {
+      //Return 0 if there is less than 2 elements else it returns the average of both elements value's
+      return ((temperatureList.length < 2) ? 0 : (temperatureList[0].value + temperatureList[1].value) / 2);
+    }
+
     handleAddFormItem = () => {
-      let list = this.state.formsItems.slice();
-      if(list.length >= 4) return;
-      console.log(list);
+      //Copy of React Components list
+      let componentsList = this.state.formsItems.slice();
+      console.log("@------------------");
+      console.log("COMPONENTS ORIGINAL LIST: ", componentsList);
+      if(componentsList.length >= 4) return;
 
-      let temps = this.state.day.temperatures.slice();
+      //Copy of Temperature Items list
+      let temperatureList = this.state.day.temperatures.slice();
+      console.log("TEMPERATURES ORIGINAL LIST: ", temperatureList);
+      //Compute the average (initial value of new Components and Temperature Items)
+      const average : number = this.computeAverageTemperature(temperatureList);
+      console.log("AVERAGE: ", average);
+      //Generate the right and required pairs of hours to initialize 
+      const hours = this.generateCorrectHour(componentsList.length);
+      console.log("HOURS PAIR: ", hours);
 
-      let average : number = 0;
-      if (temps.length == 2)  {
-        average = (temps[0].value + temps[1].value) / 2;
-        console.log("AVERAGE: %d / VALUE 1: %d / VALUE 2: %d", average, temps[0].value, temps[1].value);
-      }
-
-      const hours = this.generateCorrectHour(list.length);
-      if (list.length == 0) {
-        list.push(
-          this.generateSingleFormItem(list.length, {hour: moment(hours[0]), value: 0})
-        );
-        list.push(
-          this.generateSingleFormItem(list.length, {hour: moment(hours[1]), value: 0})
-        );
-      }
-      else if (list.length == 2) {
-        list.push(
-          this.generateSingleFormItem(list.length, {hour: moment(hours[0]), value: (temps[0].value+average)/2})
-        );
-        list.push(
-          this.generateSingleFormItem(list.length, {hour: moment(hours[1]), value: (temps[1].value+average)/2})
-        );
-      }
+      componentsList = this.generatePairsFormItem(componentsList, average, hours, temperatureList);
       
-      list = this.sortFormList(list);
-      this.setState({formsItems: list});
-
-      if (temps.length == 0) {
-        temps.push(
-          {hour: moment(hours[0]), value: 0}, 
-          {hour: moment(hours[1]), value: 0}
-        );
-      }
-      else if (temps.length == 2) {
-        temps.push(
-          {hour: moment(hours[0]), value: ((temps[0].value)+average)/2}, 
-          {hour: moment(hours[1]), value: (temps[1].value+average)/2}
-        );
-      }
+      componentsList = this.sortFormList(componentsList);
+      console.log("COMPONENTS SORTED LIST: ", componentsList);
+      this.setState({day: this.state.day, formsItems: componentsList});
       
-      temps = this.sortTempList(temps);
+      temperatureList = this.generatePairsTemperatureItems(temperatureList, average, hours);
+      temperatureList = this.sortTempList(temperatureList);
+      console.log("TEMPERATURES SORTED LIST: ", temperatureList);
+      console.log("$------------------");
       this.setState({
         day: {
           daynumber: "BLABLA",
           date: this.state.day.date,
-          temperatures: temps
+          temperatures: temperatureList
         }
-      });
+      }, () => this.buttonDisabledController());
     }
 
-
     handleRemoveFormItem = () => {
-      const list = this.state.formsItems.slice();
-      if(list.length == 2) {list.splice(0, 1); list.splice(0, 1)}
-      else if (list.length >= 4) {list.splice(1, 1); list.splice(1, 1)}
-      this.setState({formsItems: list});
+      const componentsList = this.state.formsItems.slice();
+      if(componentsList.length == 2) { componentsList.splice(0, 2) }
+      else if (componentsList.length >= 4) { componentsList.splice(1, 2); }
+      this.setState({formsItems: componentsList});
 
-      const temps = this.state.day.temperatures.slice();
-      if(temps.length == 2) {temps.splice(0, 1); temps.splice(0, 1)}
-      else if (temps.length >= 4) {temps.splice(1, 1); temps.splice(1, 1)}
+      const temperatureList = this.state.day.temperatures.slice();
+      if(temperatureList.length == 2) { temperatureList.splice(0, 2); }
+      else if (temperatureList.length >= 4) { temperatureList.splice(1, 2); }
       this.setState({
-        day: {temperatures: temps}
-      });
+        day: {
+          daynumber: "BLABLA",
+          date: this.state.day.date,
+          temperatures: temperatureList 
+        }
+      }, () => this.buttonDisabledController());
     }
 
     handleChangeDate = (value : Moment | null) => {
@@ -155,60 +188,52 @@ export default class TemperatureForm extends React.Component<Props> {
             date: moment(value, 'DD/MM/YYYY').startOf('day'),
             temperatures: this.state.day.temperatures
           }
-      }, () => { console.log("Date :" + this.state.day.date.toString()); });
+      })
     };
 
     handleChangeTimeAndValue = (value : number, hour:  moment.Moment, i: number) => {
-      const list = this.state.day.temperatures.slice()
-      console.log("Number : ", {number: value});
-      list[i] = {value: value, hour: moment(hour)};
+      const temperatureList = this.state.day.temperatures.slice()
+      
+      temperatureList[i] = {value: value, hour: moment(hour)};
       this.setState({
         day: {
           daynumber: "BLABLA",
           date: this.state.day.date,
-          temperatures: list
-        }
-      }, () => { 
-        for(let x = 0; x < this.state.day.temperatures.length; x++) {
-          console.log("ID: " + x + 
-          " Value: " + this.state.day.temperatures[x].value  +
-          " Hour: " + moment(this.state.day.temperatures[x].hour).toString());
+          temperatures: temperatureList
         }
       });
     }
 
     handleOnClick = () => {
-      let tempsList = this.state.day.temperatures.slice();
-      if (tempsList.length < 2) return;
-      if (tempsList.length == 2) {
-        let average : number = 0;
-        average = (tempsList[0].value + tempsList[1].value) / 2; 
-        const hours = this.generateCorrectHour(tempsList.length);
-        tempsList.push(
-          {hour: moment(hours[0]), value: (tempsList[0].value+average)/2}, 
-          {hour: moment(hours[1]), value: (tempsList[1].value+average)/2}
-        );   
-        tempsList = this.sortTempList(tempsList);
-        
+      let temperatureList = this.state.day.temperatures.slice();
+      if (temperatureList.length < 2) return;
+      if (temperatureList.length == 2) {
+        const average : number = this.computeAverageTemperature(temperatureList);
+        const hours = this.generateCorrectHour(temperatureList.length);
+
+        temperatureList = this.generatePairsTemperatureItems(temperatureList, average, hours);
+        temperatureList = this.sortTempList(temperatureList);
       }
       
-      this.setState(
-      {
+      this.props.handleCollectDayData(this.state.day);  
+      this.setState({
         day: {
-          daynumber: "BLABLA",
+          daynumber: "ORRHh",
           date: this.state.day.date,
-          temperatures: tempsList
+          temperatures: []
+        }, 
+        formsItems: []
+      }, () => this.buttonDisabledController())
+    }
+
+    buttonDisabledController() : void {
+      this.setState({
+        buttonDisabled: {
+          add: (this.state.formsItems.length > 2),
+          remove: (this.state.formsItems.length < 2),
+          submit: (this.state.formsItems.length < 2)
         }
-      }, 
-      () => {
-        this.props.handleCollectDayData(this.state.day);  
-        this.setState({
-          day: {
-            temperatures: []
-          }, 
-          formsItems: []
-        })
-      });
+      })
     }
 
     render() {
@@ -226,11 +251,13 @@ export default class TemperatureForm extends React.Component<Props> {
               </LocalizationProvider>
     
               <ButtonGroup variant="contained">
-                <Button color='primary' sx={{fontSize: 24}} onClick={this.handleAddFormItem}>+</Button>
-                <Button color='error' sx={{fontSize: 24}} onClick={this.handleRemoveFormItem}>-</Button>
+                <Button color='primary' sx={{fontSize: 24}} onClick={this.handleAddFormItem}
+                disabled={this.state.buttonDisabled.add}>+</Button>
+                <Button color='error' sx={{fontSize: 24}} onClick={this.handleRemoveFormItem}
+                disabled={this.state.buttonDisabled.remove}>-</Button>
               </ButtonGroup>
               <Button variant="contained" color="success" 
-              onClick={() => this.handleOnClick()}
+              onClick={() => this.handleOnClick()} disabled={this.state.buttonDisabled.submit}
               > Envoyer </Button>
             </Stack>
             <Divider sx={{mt: 2}}></Divider>
